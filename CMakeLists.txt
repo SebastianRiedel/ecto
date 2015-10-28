@@ -29,6 +29,13 @@ cmake_minimum_required(VERSION 2.8)
 
 project(ecto)
 
+# account for missing cmake support of rmpm
+set(BOOST "/volume/software/common/foreign_packages/boost/1.52.0")
+set(BOOST_ROOT "${BOOST}")
+set(BOOST_INCLUDEDIR "${BOOST}/include")
+set(BOOST_LIBRARYDIR "${BOOST}/lib/sled11-x86-gcc4.x")
+set(Boost_NO_SYSTEM_PATHS ON)
+
 find_package(catkin REQUIRED)
 find_package(Boost REQUIRED)
 find_package(Threads REQUIRED)
