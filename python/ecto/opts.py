@@ -31,13 +31,15 @@ the schedulers.
 '''
 
 import ecto
+import threading
+import subprocess
 
-def use_ipython(options, sched, plasm, locals={}):
+def use_ipython(options, scheduler, plasm, locals={}):
     '''Launch a plasm using ipython, and a scheduler of choice.
 
        Keyword arguments:
        options -- are from scheduler_options
-       sched -- is an already initialized scheduler for plasm.
+       scheduler -- is an already initialized scheduler for plasm.
        plasm -- The graph to execute
        locals -- are a dictionary of locals to forward to the ipython shell, use locals()
     '''
@@ -45,9 +47,10 @@ def use_ipython(options, sched, plasm, locals={}):
     for key, val in locals.items():
         vars()[key] = val
 
-    sched.prepare_jobs(options.niter)
-    print "Scheduler ready to run. To execute for some number of microseconds, type:"
-    print "sched.run(1000)"
+    scheduler.prepare_jobs(options.niter)
+    sched = threading.Thread(name="foo", target=scheduler.run)
+    print "Scheduler thread ready to run. To execute, type:"
+    print "sched.start()"
 
     import IPython
     if IPython.__version__ < '0.11':
@@ -68,12 +71,24 @@ def run_plasm(options, plasm, locals={}):
         :param plasm: The plasm to run.
         :param locals: Any local variables that you would like available to the iPython shell session.
     '''
+
+    tail_shell = None
+    if options.devel:
+        options.graphviz = True
+        options.stats = True
+        options.logfile = '/tmp/ecto.log'
+        options.ipython = True
+
     if options.graphviz:
         ecto.view_plasm(plasm)
     if len(options.dotfile) > 0:
         print >> open(options.dotfile, 'wt'), plasm.viz()
     if len(options.logfile) > 0:
         ecto.log_to_file(options.logfile)
+        if options.devel:
+            command = "/usr/bin/uxterm -T /tmp/ecto.log -e tail -f %s" % options.logfile
+            print 'opening devel shell: %s' % command
+            tail_shell = subprocess.Popen(command, shell=True)
     if options.gui:
         from ecto.gui import gui_execute
         gui_execute(plasm)
@@ -267,6 +282,10 @@ def scheduler_options(parser,
     ecto_group.add_argument('--stats', dest='stats', action='store_const',
                         const=True, default=default_graphviz,
                         help='Show the runtime statistics of the plasm.')
+
+    ecto_group.add_argument('--devel', dest='devel', action='store_true',
+                        help='''Bring up an ipython prompt, execute asynchronously, log 
+                        into /tmp/ecto.log, open a tail -f viewer on log file and visualize plasm.''')
 
 def doit(plasm, description="An ecto graph.", locals={}, args=None,
          default_niter=0,
