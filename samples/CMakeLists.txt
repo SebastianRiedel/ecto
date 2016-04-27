@@ -28,9 +28,12 @@
 cmake_minimum_required(VERSION 2.8)
 project(ecto_samples)
 
-ectomodule(hello_ecto DESTINATION ecto
+ectomodule(hello_ecto DESTINATION ecto INSTALL
     hello_ecto.cpp
 )
+
+catkin_install_python(PROGRAMS hello.py sample_opts.py
+                      DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 add_subdirectory(experimental)
 
